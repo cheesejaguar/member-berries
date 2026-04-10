@@ -25,6 +25,22 @@ function showLines(pi: ExtensionAPI, title: string, lines: string[]) {
 }
 
 export default function memberBerries(pi: ExtensionAPI) {
+  async function checkpointLifecycle(ctx: { cwd: string; sessionManager: any; ui: any }, trigger: string) {
+    const status = await getMemoryStatus(ctx.cwd);
+    if (!status.exists) return null;
+
+    const checkpoint = await writeCheckpoint(ctx.cwd, {
+      trigger,
+      objective: status.currentObjective,
+      currentState: `${trigger} checkpoint from member-berries. Current objective: ${status.currentObjective}`,
+      nextSteps: ["Review current.md and continue from the active plan."],
+      session: ctx.sessionManager.getSessionName?.() ?? "member-berries",
+    });
+    await refreshCurrentTimestamp(ctx.cwd);
+    ctx.ui.setStatus(WIDGET_ID, `memory: ${status.counts.checkpoints + 1} checkpoints`);
+    return checkpoint;
+  }
+
   pi.on("session_start", async (_event, ctx) => {
     const status = await getMemoryStatus(ctx.cwd);
     if (status.exists) {
@@ -32,6 +48,15 @@ export default function memberBerries(pi: ExtensionAPI) {
     } else {
       ctx.ui.setStatus(WIDGET_ID, "memory: not bootstrapped");
     }
+  });
+
+  pi.on("session_before_compact", async (_event, ctx) => {
+    await checkpointLifecycle(ctx, "pre-compact");
+    return undefined;
+  });
+
+  pi.on("session_shutdown", async (_event, ctx) => {
+    await checkpointLifecycle(ctx, "shutdown");
   });
 
   pi.on("before_agent_start", async (event, ctx) => {
@@ -123,6 +148,7 @@ export default function memberBerries(pi: ExtensionAPI) {
         session: ctx.sessionManager.getSessionName?.() ?? "member-berries",
       });
       await refreshCurrentTimestamp(ctx.cwd);
+      ctx.ui.setStatus(WIDGET_ID, `memory: ${status.counts.checkpoints + 1} checkpoints`);
       showLines(pi, "member-berries sync", [`Checkpoint written: ${checkpoint}`]);
       ctx.ui.notify("member-berries checkpoint created", "success");
     },

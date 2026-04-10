@@ -88,6 +88,15 @@ The extension in `extension/` is now more than a placeholder, but still an MVP.
 - manual checkpoint sync
 - LLM memory search tool
 - prompt-start contextual memory injection
+- checkpoint creation on pre-compact and shutdown lifecycle events
+
+### Install into Pi from a local path
+
+Because the repo now has a Pi package manifest in `package.json`, you can install it directly:
+
+```bash
+pi install /Users/aaron/Documents/member-berries
+```
 
 ### Recommended development flow
 

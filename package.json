@@ -1,8 +1,27 @@
 {
   "name": "member-berries",
+  "version": "0.1.0",
   "private": true,
+  "description": "Local-first project memory for Pi: templates, docs, and an extension MVP",
+  "license": "MIT",
   "type": "module",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "memory",
+    "agent-memory",
+    "developer-tools"
+  ],
   "scripts": {
     "test": "node --test tests/memory-core.test.mjs"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@sinclair/typebox": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./extension/index.ts"
+    ]
   }
 }

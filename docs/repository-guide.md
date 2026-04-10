@@ -19,6 +19,7 @@ Onboarding and explanatory documentation.
 Current contents:
 - `quickstart.md` — how to use the repo now
 - `how-it-works.md` — the memory model and extension behavior
+- `demo-workflow.md` — a suggested end-to-end demo flow for Pi
 - `repository-guide.md` — this file
 - `images/` — small visuals used by the README
 
@@ -70,6 +71,7 @@ Current MVP responsibilities:
 - memory search
 - memory bootstrap/status/prime/sync commands
 - manual checkpoint creation
+- lifecycle checkpoints on pre-compact and shutdown
 
 ## `tests/`
 
@@ -86,10 +88,12 @@ These tests are intentionally aimed at the logic that is easiest to keep determi
 
 ## `package.json`
 
-A small Node entry point for local testing.
+Package metadata for local testing and Pi package discovery.
 
-Current script:
-- `npm test`
+Current responsibilities:
+- exposes the test script (`npm test`)
+- declares Pi package metadata through the `pi` manifest
+- points Pi at `extension/index.ts`
 
 ## Current maturity level
 

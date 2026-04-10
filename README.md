@@ -105,6 +105,7 @@ Each file has one job:
 
 - [Quick start](docs/quickstart.md)
 - [How it works](docs/how-it-works.md)
+- [Demo workflow](docs/demo-workflow.md)
 - [Repository guide](docs/repository-guide.md)
 - [Canonical design spec](specs/2026-04-10-pi-project-memory-design.md)
 - [Sample project](examples/sample-project/README.md)
@@ -122,7 +123,7 @@ If you just want the memory model today:
 ### Extension MVP workflow
 
 If you want the MVP extension path:
-1. use the templates or run the future extension inside Pi
+1. install the package in Pi
 2. bootstrap `.pi/` memory
 3. use the commands:
    - `/memory-bootstrap`
@@ -130,6 +131,12 @@ If you want the MVP extension path:
    - `/memory-search <query>`
    - `/memory-prime [prompt]`
    - `/memory-sync`
+
+Example local install:
+
+```bash
+pi install /Users/aaron/Documents/member-berries
+```
 
 ## What to copy into a real project today
 
@@ -195,6 +202,21 @@ A practical daily loop looks like this:
 5. add a checkpoint before stopping or switching context
 6. let memory search pull deeper context only when needed
 
+## Demo / GIF workflow
+
+If you want to show the tool in a short demo, use this sequence:
+
+1. install the package with `pi install /Users/aaron/Documents/member-berries`
+2. open Pi in a test repo
+3. run `/memory-bootstrap`
+4. show the generated `.pi/` files
+5. run `/memory-status`
+6. run `/memory-search flaky search`
+7. run `/memory-sync`
+8. ask a normal repo question and show the injected-memory behavior
+
+A longer written version lives in [docs/demo-workflow.md](docs/demo-workflow.md).
+
 ## Safety and privacy
 
 This project is designed to be **local-first**.
@@ -224,10 +246,10 @@ Before commits, the repo should be checked for:
 
 Near-term priorities:
 1. improve ranking and retrieval heuristics
-2. add checkpoint hooks on compaction/shutdown
-3. support memory pruning and dedupe
-4. add safer durable-memory promotion flows
-5. turn this into a more complete Pi package
+2. support memory pruning and dedupe
+3. add safer durable-memory promotion flows
+4. polish extension UX and package ergonomics
+5. grow this into a more complete Pi package
 
 ## License
 

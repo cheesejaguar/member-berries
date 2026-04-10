@@ -19,19 +19,29 @@ This folder now contains a **first-pass MVP** of the Pi extension for `member-be
   - `.pi/PROJECT.md`
   - `.pi/memory/current.md`
   - relevant snippets from decisions, gotchas, commands, and recent checkpoints
+- on `session_before_compact`, the extension writes a checkpoint if local memory exists
+- on `session_shutdown`, the extension writes a checkpoint if local memory exists
 
 ## What is not implemented yet
 
 - production-grade ranking
 - durable promotion into `decisions.md`, `gotchas.md`, or `commands.md`
-- checkpoint creation on compaction/shutdown hooks
 - pruning and dedupe commands
 - rich custom UI or review flows
+- more polished package/install ergonomics beyond the basic Pi manifest
 
 ## File layout
 
 - `index.ts` — Pi extension entry point
 - `memory-core.mjs` — pure helper functions used by the extension and tested with Node
+
+## Installation
+
+Because the repo now includes a Pi manifest in `package.json`, Pi can install it from the repository root:
+
+```bash
+pi install /Users/aaron/Documents/member-berries
+```
 
 ## Testing
 
@@ -46,3 +56,5 @@ Current tests cover:
 - bootstrap scaffolding
 - search ranking
 - injected-memory assembly
+- checkpoint creation
+- current-state timestamp refresh

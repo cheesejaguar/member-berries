@@ -8,7 +8,9 @@ import {
   buildInjectedMemory,
   bootstrapMemoryProject,
   parseSections,
+  refreshCurrentTimestamp,
   searchMemory,
+  writeCheckpoint,
 } from '../extension/memory-core.mjs';
 
 test('parseSections extracts markdown sections with headings', () => {
@@ -79,4 +81,31 @@ test('buildInjectedMemory includes always-on files and relevant snippets', async
   assert.match(injected, /A notes API with search indexing/);
   assert.match(injected, /Fix search indexing delays/);
   assert.match(injected, /Retry failures look like flaky search/);
+});
+
+test('writeCheckpoint creates a timestamped checkpoint file', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'member-berries-'));
+  await bootstrapMemoryProject(root);
+
+  const checkpoint = await writeCheckpoint(root, {
+    trigger: 'pre-compact',
+    objective: 'Preserve working state before compaction',
+    time: '2026-04-10T12:34:56Z',
+  });
+
+  const checkpointText = await readFile(checkpoint, 'utf8');
+  assert.match(checkpoint, /2026-04-10T12-34-56Z\.md$/);
+  assert.match(checkpointText, /Trigger: pre-compact/);
+  assert.match(checkpointText, /Preserve working state before compaction/);
+});
+
+test('refreshCurrentTimestamp rewrites the Last Updated field', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'member-berries-'));
+  await bootstrapMemoryProject(root);
+
+  const currentPath = join(root, '.pi', 'memory', 'current.md');
+  await refreshCurrentTimestamp(root, '2026-04-10T08:30:00Z');
+  const currentText = await readFile(currentPath, 'utf8');
+
+  assert.match(currentText, /## Last Updated\n2026-04-10T08:30:00Z/);
 });

@@ -94,6 +94,7 @@ The MVP extension now supports:
 - assembling a compact injected-memory block for a prompt
 - bootstrapping a new local memory structure
 - creating a manual checkpoint and refreshing the current-state timestamp
+- writing lifecycle checkpoints on pre-compact and shutdown
 
 ## Retrieval model
 
@@ -126,11 +127,11 @@ This design intentionally avoids:
 ## What is still missing
 
 The full intended system still needs:
-- checkpoint hooks on compaction/shutdown
 - safer durable-memory promotion
 - pruning and dedupe
 - better ranking and path-aware retrieval
 - more polished extension UX
+- stronger packaging and installation ergonomics for broader reuse
 
 ## What the repo gives you today
 
