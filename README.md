@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node tests](https://img.shields.io/badge/tests-node--test-blue.svg)](package.json)
 [![Pi extension](https://img.shields.io/badge/pi-extension%20mvp-8A2BE2.svg)](extension/README.md)
-[![Status](https://img.shields.io/badge/status-foundation%20%2B%20mvp-orange.svg)](docs/quickstart.md)
+[![Status](https://img.shields.io/badge/status-v1.0.0-brightgreen.svg)](docs/quickstart.md)
 
 Small, inspectable, repo-local memory for Pi:
 
@@ -40,7 +40,7 @@ The goal is:
 
 ## Current status
 
-This repository is now in a useful **foundation + MVP extension** state.
+This repository is now in a usable **v1.0.0 foundation release** state.
 
 What exists today:
 - a full design spec
@@ -56,14 +56,17 @@ What works now:
 - search local memory
 - preview injected memory
 - create manual checkpoints
-- use an MVP `memory_search` tool
+- prune duplicate/old checkpoints
+- promote verified memory through a guided interactive flow
+- use `memory_search` and `memory_promote` tools
 - inject a compact memory block at prompt start
+- write lifecycle checkpoints on pre-compact and shutdown
 
-What is **not** production-ready yet:
-- checkpoint hooks on compaction/shutdown
-- durable auto-promotion into `decisions.md`, `gotchas.md`, or `commands.md`
-- advanced ranking and pruning
-- polished extension UI
+What is **not** fully mature yet:
+- advanced approval/review flows around durable promotions
+- richer pruning beyond checkpoint cleanup
+- more polished extension UI
+- broader real-world eval coverage across many repositories
 
 ## Why this exists
 
@@ -252,10 +255,10 @@ Before commits, the repo should be checked for:
 ## Roadmap
 
 Near-term priorities:
-1. improve ranking and retrieval heuristics further
-2. expand pruning beyond checkpoint cleanup
-3. make durable-memory promotion safer and more ergonomic
-4. polish extension UX and package ergonomics
+1. expand pruning beyond checkpoint cleanup
+2. add stronger approval/review flows around durable promotions
+3. polish extension UX and package ergonomics
+4. add broader eval coverage across many repositories
 5. grow this into a more complete Pi package
 
 ## License

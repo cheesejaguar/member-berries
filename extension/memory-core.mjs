@@ -229,16 +229,33 @@ export function parseSections(text) {
   const lines = String(text || '').split(/\r?\n/);
   const sections = [];
   let current = null;
+  let parentHeading = null;
 
   for (const line of lines) {
-    const match = line.match(/^##\s+(.*)$/);
-    if (match) {
+    const level2 = line.match(/^##\s+(.*)$/);
+    const level3 = line.match(/^###\s+(.*)$/);
+
+    if (level2) {
       if (current) {
         current.body = current.body.join('\n').trim();
         sections.push(current);
       }
+      parentHeading = level2[1].trim();
       current = {
-        heading: match[1].trim(),
+        heading: parentHeading,
+        body: [],
+      };
+      continue;
+    }
+
+    if (level3) {
+      if (current) {
+        current.body = current.body.join('\n').trim();
+        sections.push(current);
+      }
+      const child = level3[1].trim();
+      current = {
+        heading: parentHeading ? `${parentHeading} / ${child}` : child,
         body: [],
       };
       continue;
@@ -254,11 +271,20 @@ export function parseSections(text) {
     sections.push(current);
   }
 
-  return sections;
+  return sections.filter((section) => section.heading || section.body);
 }
 
 function tokenize(text) {
   return Array.from(new Set(String(text || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)));
+}
+
+function pathLikeTokens(text) {
+  return Array.from(new Set(
+    String(text || '')
+      .split(/\s+/)
+      .filter((part) => /[\\/]|\.[a-z0-9]+$/i.test(part))
+      .flatMap((part) => part.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)),
+  ));
 }
 
 function fallbackSection(source, text) {
@@ -280,6 +306,7 @@ function scoreSection(query, section, source, path) {
   const body = String(section.body || '').toLowerCase();
   const sourceText = `${source} ${path}`.toLowerCase();
   const phrase = String(query || '').toLowerCase().trim();
+  const pathTokens = pathLikeTokens(query);
 
   let score = 0;
   if (phrase && heading.includes(phrase)) score += 12;
@@ -289,6 +316,12 @@ function scoreSection(query, section, source, path) {
     if (heading.includes(token)) score += 4;
     if (body.includes(token)) score += 2;
     if (sourceText.includes(token)) score += 1;
+  }
+
+  for (const token of pathTokens) {
+    if (heading.includes(token)) score += 3;
+    if (body.includes(token)) score += 4;
+    if (sourceText.includes(token)) score += 5;
   }
 
   const conciseBonus = Math.max(0, 4 - Math.floor(body.length / 300));

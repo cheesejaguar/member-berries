@@ -87,8 +87,8 @@ The extension in `extension/` is now more than a placeholder, but still an MVP.
 - injected-memory preview
 - manual checkpoint sync
 - checkpoint pruning / duplicate cleanup
-- safer durable-memory promotion commands/tools
-- LLM memory search tool
+- guided interactive durable-memory promotion
+- LLM memory search and memory promote tools
 - prompt-start contextual memory injection
 - checkpoint creation on pre-compact and shutdown lifecycle events
 

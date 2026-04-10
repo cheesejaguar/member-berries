@@ -4,6 +4,18 @@ All notable changes to `member-berries` will be documented in this file.
 
 The format is intentionally simple and human-readable.
 
+## [1.0.0] - 2026-04-10
+
+### Added
+- guided interactive `/memory-promote` flow using Pi UI prompts
+- stronger heading-aware and path-aware search ranking
+- `v1.0.0` release prep with package metadata, changelog, and GitHub release workflow
+
+### Changed
+- `memory-promote` now supports both no-arg guided mode and explicit structured arguments
+- ranking now treats subsection headings and path-like query terms as stronger relevance signals
+- release docs now document the `v1.0.0` release path
+
 ## [0.2.0] - 2026-04-10
 
 ### Added

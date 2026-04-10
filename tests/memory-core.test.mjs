@@ -19,9 +19,11 @@ test('parseSections extracts markdown sections with headings', () => {
   const text = `# Decisions\n\n## 2026-04-10 — Search indexing\n\n### Status\nAccepted\n\n### Why\nQueue retries were flaky.\n`;
   const sections = parseSections(text);
 
-  assert.ok(sections.length >= 1);
+  assert.ok(sections.length >= 2);
   assert.equal(sections[0].heading, '2026-04-10 — Search indexing');
-  assert.match(sections[0].body, /Queue retries/);
+  assert.equal(sections[1].heading, '2026-04-10 — Search indexing / Status');
+  assert.equal(sections[2].heading, '2026-04-10 — Search indexing / Why');
+  assert.match(sections[2].body, /Queue retries/);
 });
 
 test('bootstrapMemoryProject creates the local .pi memory structure', async () => {
@@ -43,7 +45,7 @@ test('searchMemory ranks matching decision content above unrelated content', asy
   await bootstrapMemoryProject(root);
 
   const decisionsPath = join(root, '.pi', 'memory', 'decisions.md');
-  await (await import('node:fs/promises')).writeFile(
+  await writeFile(
     decisionsPath,
     `# Decisions\n\n## 2026-04-10 — Search indexing retries\n\n### Status\nAccepted\n\n### Why\nRetry counts caused delayed search indexing behavior.\n`,
     'utf8',
@@ -54,6 +56,23 @@ test('searchMemory ranks matching decision content above unrelated content', asy
   assert.ok(results.length > 0);
   assert.equal(results[0].source, 'decisions');
   assert.match(results[0].heading, /Search indexing retries/);
+});
+
+test('searchMemory boosts path-aware matches when query references a subsystem path', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'member-berries-'));
+  await bootstrapMemoryProject(root);
+
+  const gotchasPath = join(root, '.pi', 'memory', 'gotchas.md');
+  await writeFile(
+    gotchasPath,
+    `# Gotchas\n\n## Workers\n\n### Generic retry issue\n- Symptom: retries are confusing\n- Cause: workers fail\n- Relevant paths/commands: src/core/search-index.ts\n\n## Workers\n\n### Embedding worker retry issue\n- Symptom: retries are confusing\n- Cause: workers fail\n- Relevant paths/commands: src/jobs/embedding-worker.ts\n`,
+    'utf8',
+  );
+
+  const results = await searchMemory(root, 'src/jobs/embedding-worker.ts retry issue', 'gotchas');
+
+  assert.ok(results.length >= 2);
+  assert.match(results[0].heading, /Embedding worker retry issue/);
 });
 
 test('buildInjectedMemory includes always-on files and relevant snippets', async () => {

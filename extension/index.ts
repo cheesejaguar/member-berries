@@ -26,6 +26,79 @@ function showLines(pi: ExtensionAPI, title: string, lines: string[]) {
   );
 }
 
+async function guidedPromotion(ctx: any) {
+  const kind = await ctx.ui.select("Promote memory kind", ["decision", "gotcha", "command"]);
+  if (!kind) return null;
+
+  if (kind === "decision") {
+    const title = await ctx.ui.input("Decision title", "Use worker retry metrics");
+    if (!title) return null;
+    const context = await ctx.ui.editor("Decision context", "What problem existed?");
+    if (context == null) return null;
+    const decision = await ctx.ui.editor("Decision", "What was chosen?");
+    if (decision == null) return null;
+    const why = await ctx.ui.editor("Why", "Why was this the right tradeoff?");
+    if (why == null) return null;
+    return {
+      kind: "decisions",
+      payload: {
+        date: new Date().toISOString().slice(0, 10),
+        title,
+        status: "Accepted",
+        context,
+        decision,
+        why,
+      },
+    };
+  }
+
+  if (kind === "gotcha") {
+    const title = await ctx.ui.input("Gotcha title", "Worker retries hide first failure");
+    if (!title) return null;
+    const symptom = await ctx.ui.input("Symptom", "What does the failure look like?");
+    if (symptom == null) return null;
+    const cause = await ctx.ui.input("Cause", "What causes it?");
+    if (cause == null) return null;
+    const fix = await ctx.ui.input("Fix", "How do you resolve it?");
+    if (fix == null) return null;
+    const prevention = await ctx.ui.input("Prevention", "How do you avoid it later?");
+    if (prevention == null) return null;
+    return {
+      kind: "gotchas",
+      payload: {
+        category: "General",
+        title,
+        symptom,
+        cause,
+        fix,
+        prevention,
+      },
+    };
+  }
+
+  const section = await ctx.ui.select("Command section", [
+    "Setup",
+    "Dev",
+    "Test",
+    "Lint / Typecheck",
+    "Build",
+    "Debug / Inspection",
+  ]);
+  if (!section) return null;
+  const command = await ctx.ui.input("Verified command", "pnpm test -- search-index");
+  if (!command) return null;
+  const note = await ctx.ui.input("Optional note", "When should someone use this command?");
+  if (note == null) return null;
+  return {
+    kind: "commands",
+    payload: {
+      section,
+      command,
+      note,
+    },
+  };
+}
+
 export default function memberBerries(pi: ExtensionAPI) {
   async function checkpointLifecycle(ctx: { cwd: string; sessionManager: any; ui: any }, trigger: string) {
     const status = await getMemoryStatus(ctx.cwd);
@@ -172,47 +245,65 @@ export default function memberBerries(pi: ExtensionAPI) {
   pi.registerCommand("memory-promote", {
     description: "Promote verified information into decisions, gotchas, or commands",
     handler: async (args, ctx) => {
-      const [kindRaw, ...rest] = args.trim().split(/\s+/);
-      const kind = (kindRaw || "").toLowerCase();
-      const payloadText = rest.join(" ");
-      if (!kind || !payloadText) {
-        ctx.ui.notify("Usage: /memory-promote <decision|gotcha|command> <fields separated by ::>", "warning");
-        return;
-      }
+      const trimmed = args.trim();
 
-      let result;
-      if (kind === "decision") {
-        const [title, context, decision, why] = payloadText.split("::").map((part) => part.trim());
-        result = await promoteMemoryEntry(ctx.cwd, "decisions", {
-          date: new Date().toISOString().slice(0, 10),
-          title,
-          status: "Accepted",
-          context,
-          decision,
-          why,
-        });
-      } else if (kind === "gotcha") {
-        const [title, symptom, cause, fix, prevention] = payloadText.split("::").map((part) => part.trim());
-        result = await promoteMemoryEntry(ctx.cwd, "gotchas", {
-          category: "General",
-          title,
-          symptom,
-          cause,
-          fix,
-          prevention,
-        });
-      } else if (kind === "command") {
-        const [section, command, note] = payloadText.split("::").map((part) => part.trim());
-        result = await promoteMemoryEntry(ctx.cwd, "commands", {
-          section,
-          command,
-          note,
-        });
+      let kind: string | undefined;
+      let payload: any;
+
+      if (!trimmed) {
+        const guided = await guidedPromotion(ctx);
+        if (!guided) {
+          ctx.ui.notify("Promotion cancelled", "info");
+          return;
+        }
+        kind = guided.kind;
+        payload = guided.payload;
       } else {
-        ctx.ui.notify("Kind must be one of: decision, gotcha, command", "warning");
-        return;
+        const [kindRaw, ...rest] = trimmed.split(/\s+/);
+        const payloadText = rest.join(" ");
+        const mode = (kindRaw || "").toLowerCase();
+        if (!mode || !payloadText) {
+          ctx.ui.notify("Usage: /memory-promote <decision|gotcha|command> <fields separated by ::> or run with no args for guided mode", "warning");
+          return;
+        }
+
+        if (mode === "decision") {
+          const [title, context, decision, why] = payloadText.split("::").map((part) => part.trim());
+          kind = "decisions";
+          payload = {
+            date: new Date().toISOString().slice(0, 10),
+            title,
+            status: "Accepted",
+            context,
+            decision,
+            why,
+          };
+        } else if (mode === "gotcha") {
+          const [title, symptom, cause, fix, prevention] = payloadText.split("::").map((part) => part.trim());
+          kind = "gotchas";
+          payload = {
+            category: "General",
+            title,
+            symptom,
+            cause,
+            fix,
+            prevention,
+          };
+        } else if (mode === "command") {
+          const [section, command, note] = payloadText.split("::").map((part) => part.trim());
+          kind = "commands";
+          payload = {
+            section,
+            command,
+            note,
+          };
+        } else {
+          ctx.ui.notify("Kind must be one of: decision, gotcha, command", "warning");
+          return;
+        }
       }
 
+      const result = await promoteMemoryEntry(ctx.cwd, kind, payload);
       ctx.ui.notify(result.added ? `Promoted ${kind} memory` : `${kind} memory already present`, result.added ? "success" : "info");
     },
   });

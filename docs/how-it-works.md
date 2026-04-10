@@ -100,10 +100,11 @@ The MVP extension now supports:
 
 ## Retrieval model
 
-The current ranking logic is intentionally simple:
-- parse markdown sections
+The current ranking logic is intentionally transparent:
+- parse markdown sections, including subsection headings
 - score heading/body overlap against the query
 - boost direct matches
+- boost path-like query terms against file/path-related content
 - keep results small and readable
 
 This is not meant to be the final ranking system. It is meant to be understandable, testable, and easy to improve.

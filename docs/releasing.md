@@ -1,6 +1,6 @@
 # Releasing
 
-This project is not published to npm yet, but the repository is now prepared for a cleaner release path.
+This repository now has a `v1.0.0` release workflow built around git tags and GitHub releases.
 
 ## Current release-ready elements
 
@@ -47,13 +47,15 @@ pi install git:github.com/cheesejaguar/member-berries
 4. run `npm run pack:check`
 5. run a secret scan
 6. inspect `git diff`
-7. create a git tag
-8. push to GitHub
-9. optionally publish to npm later
+7. create a git tag (for example `v1.0.0`)
+8. push branch and tag to GitHub
+9. create a GitHub release with notes
+10. optionally publish to npm later
 
 ## Important note
 
-Even with publish metadata in place, you should only publish after:
+Even with publish metadata in place, you should only publish to npm after:
 - the install path is stable
 - docs match behavior
 - the extension API is considered stable enough for users
+- you are comfortable supporting the package outside of direct git installs

@@ -1,6 +1,6 @@
 {
   "name": "member-berries",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "private": false,
   "description": "Local-first project memory for Pi: templates, docs, and an extension MVP",
   "license": "MIT",
