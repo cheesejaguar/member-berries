@@ -106,6 +106,7 @@ Each file has one job:
 - [Quick start](docs/quickstart.md)
 - [How it works](docs/how-it-works.md)
 - [Demo workflow](docs/demo-workflow.md)
+- [Releasing](docs/releasing.md)
 - [Repository guide](docs/repository-guide.md)
 - [Canonical design spec](specs/2026-04-10-pi-project-memory-design.md)
 - [Sample project](examples/sample-project/README.md)
@@ -136,6 +137,12 @@ Example local install:
 
 ```bash
 pi install /Users/aaron/Documents/member-berries
+```
+
+Example GitHub install:
+
+```bash
+pi install git:github.com/cheesejaguar/member-berries
 ```
 
 ## What to copy into a real project today
@@ -245,9 +252,9 @@ Before commits, the repo should be checked for:
 ## Roadmap
 
 Near-term priorities:
-1. improve ranking and retrieval heuristics
-2. support memory pruning and dedupe
-3. add safer durable-memory promotion flows
+1. improve ranking and retrieval heuristics further
+2. expand pruning beyond checkpoint cleanup
+3. make durable-memory promotion safer and more ergonomic
 4. polish extension UX and package ergonomics
 5. grow this into a more complete Pi package
 

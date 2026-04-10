@@ -6,6 +6,8 @@ import {
   buildInjectedMemory,
   formatSearchResults,
   getMemoryStatus,
+  promoteMemoryEntry,
+  pruneMemory,
   refreshCurrentTimestamp,
   searchMemory,
   writeCheckpoint,
@@ -154,6 +156,67 @@ export default function memberBerries(pi: ExtensionAPI) {
     },
   });
 
+  pi.registerCommand("memory-prune", {
+    description: "Remove duplicate checkpoints and trim checkpoint history",
+    handler: async (args, ctx) => {
+      const keep = Number.parseInt(args.trim(), 10);
+      const result = await pruneMemory(ctx.cwd, { keepCheckpoints: Number.isFinite(keep) ? keep : 20 });
+      showLines(pi, "member-berries prune", [
+        `Removed checkpoint files: ${result.removed.length}`,
+        `Unique checkpoints kept: ${result.keptUnique}`,
+      ]);
+      ctx.ui.notify(`member-berries prune removed ${result.removed.length} file(s)`, "info");
+    },
+  });
+
+  pi.registerCommand("memory-promote", {
+    description: "Promote verified information into decisions, gotchas, or commands",
+    handler: async (args, ctx) => {
+      const [kindRaw, ...rest] = args.trim().split(/\s+/);
+      const kind = (kindRaw || "").toLowerCase();
+      const payloadText = rest.join(" ");
+      if (!kind || !payloadText) {
+        ctx.ui.notify("Usage: /memory-promote <decision|gotcha|command> <fields separated by ::>", "warning");
+        return;
+      }
+
+      let result;
+      if (kind === "decision") {
+        const [title, context, decision, why] = payloadText.split("::").map((part) => part.trim());
+        result = await promoteMemoryEntry(ctx.cwd, "decisions", {
+          date: new Date().toISOString().slice(0, 10),
+          title,
+          status: "Accepted",
+          context,
+          decision,
+          why,
+        });
+      } else if (kind === "gotcha") {
+        const [title, symptom, cause, fix, prevention] = payloadText.split("::").map((part) => part.trim());
+        result = await promoteMemoryEntry(ctx.cwd, "gotchas", {
+          category: "General",
+          title,
+          symptom,
+          cause,
+          fix,
+          prevention,
+        });
+      } else if (kind === "command") {
+        const [section, command, note] = payloadText.split("::").map((part) => part.trim());
+        result = await promoteMemoryEntry(ctx.cwd, "commands", {
+          section,
+          command,
+          note,
+        });
+      } else {
+        ctx.ui.notify("Kind must be one of: decision, gotcha, command", "warning");
+        return;
+      }
+
+      ctx.ui.notify(result.added ? `Promoted ${kind} memory` : `${kind} memory already present`, result.added ? "success" : "info");
+    },
+  });
+
   pi.registerTool({
     name: "memory_search",
     label: "Memory Search",
@@ -176,6 +239,41 @@ export default function memberBerries(pi: ExtensionAPI) {
       return {
         content: [{ type: "text", text }],
         details: { results },
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "memory_promote",
+    label: "Memory Promote",
+    description: "Promote verified information into decisions, gotchas, or commands in local project memory",
+    promptSnippet: "Promote verified information into durable project memory only when the evidence is clear",
+    promptGuidelines: [
+      "Use this tool only for verified, project-specific information that should persist beyond the current session.",
+      "Do not promote speculative or unresolved conclusions into durable memory.",
+    ],
+    parameters: Type.Object({
+      kind: Type.String({ description: "One of: decisions, gotchas, commands" }),
+      title: Type.Optional(Type.String({ description: "Decision or gotcha title" })),
+      date: Type.Optional(Type.String({ description: "Optional date for decisions" })),
+      status: Type.Optional(Type.String({ description: "Optional decision status" })),
+      context: Type.Optional(Type.String({ description: "Decision context" })),
+      decision: Type.Optional(Type.String({ description: "Decision text" })),
+      why: Type.Optional(Type.String({ description: "Decision rationale" })),
+      category: Type.Optional(Type.String({ description: "Gotcha category" })),
+      symptom: Type.Optional(Type.String({ description: "Gotcha symptom" })),
+      cause: Type.Optional(Type.String({ description: "Gotcha cause" })),
+      fix: Type.Optional(Type.String({ description: "Gotcha fix" })),
+      prevention: Type.Optional(Type.String({ description: "Gotcha prevention" })),
+      section: Type.Optional(Type.String({ description: "Command section name" })),
+      command: Type.Optional(Type.String({ description: "Verified command string" })),
+      note: Type.Optional(Type.String({ description: "Optional command note" })),
+    }),
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const result = await promoteMemoryEntry(ctx.cwd, params.kind, params);
+      return {
+        content: [{ type: "text", text: result.added ? `Promoted ${params.kind} memory.` : `${params.kind} memory already present.` }],
+        details: result,
       };
     },
   });

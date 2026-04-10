@@ -95,6 +95,8 @@ The MVP extension now supports:
 - bootstrapping a new local memory structure
 - creating a manual checkpoint and refreshing the current-state timestamp
 - writing lifecycle checkpoints on pre-compact and shutdown
+- pruning duplicate checkpoints and trimming old checkpoint history
+- promoting verified information into `decisions.md`, `gotchas.md`, and `commands.md`
 
 ## Retrieval model
 

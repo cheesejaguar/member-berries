@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -8,6 +8,8 @@ import {
   buildInjectedMemory,
   bootstrapMemoryProject,
   parseSections,
+  promoteMemoryEntry,
+  pruneMemory,
   refreshCurrentTimestamp,
   searchMemory,
   writeCheckpoint,
@@ -108,4 +110,66 @@ test('refreshCurrentTimestamp rewrites the Last Updated field', async () => {
   const currentText = await readFile(currentPath, 'utf8');
 
   assert.match(currentText, /## Last Updated\n2026-04-10T08:30:00Z/);
+});
+
+test('promoteMemoryEntry appends a decision and skips duplicate headings', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'member-berries-'));
+  await bootstrapMemoryProject(root);
+
+  const first = await promoteMemoryEntry(root, 'decisions', {
+    date: '2026-04-10',
+    title: 'Use worker retry metrics',
+    status: 'Accepted',
+    context: 'Search indexing was delayed without good visibility.',
+    decision: 'Track retry counts explicitly in worker logs.',
+    why: 'This makes first-failure causes observable.',
+    rejectedAlternatives: ['Infer retries from generic job failures'],
+    implications: 'Debugging should begin with first-attempt failure inspection.',
+  });
+  const second = await promoteMemoryEntry(root, 'decisions', {
+    date: '2026-04-10',
+    title: 'Use worker retry metrics',
+    status: 'Accepted',
+    context: 'Duplicate attempt',
+    decision: 'Duplicate attempt',
+    why: 'Duplicate attempt',
+  });
+
+  const text = await readFile(join(root, '.pi', 'memory', 'decisions.md'), 'utf8');
+  assert.equal(first.added, true);
+  assert.equal(second.added, false);
+  assert.match(text, /Use worker retry metrics/);
+});
+
+test('promoteMemoryEntry adds a command to the requested command section', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'member-berries-'));
+  await bootstrapMemoryProject(root);
+
+  const result = await promoteMemoryEntry(root, 'commands', {
+    section: 'Test',
+    command: 'pnpm test -- search-index',
+    note: 'Run this when changing indexing behavior.',
+  });
+
+  const text = await readFile(join(root, '.pi', 'memory', 'commands.md'), 'utf8');
+  assert.equal(result.added, true);
+  assert.match(text, /pnpm test -- search-index/);
+  assert.match(text, /Run this when changing indexing behavior/);
+});
+
+test('pruneMemory removes duplicate checkpoint files and trims old history', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'member-berries-'));
+  await bootstrapMemoryProject(root);
+
+  const checkpointsDir = join(root, '.pi', 'memory', 'checkpoints');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-00-00Z.md'), '# Checkpoint\n\nrepeat\n', 'utf8');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-01-00Z.md'), '# Checkpoint\n\nrepeat\n', 'utf8');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-02-00Z.md'), '# Checkpoint\n\nunique 1\n', 'utf8');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-03-00Z.md'), '# Checkpoint\n\nunique 2\n', 'utf8');
+
+  const result = await pruneMemory(root, { keepCheckpoints: 2 });
+  const remaining = (await readdir(checkpointsDir)).filter((name) => name.endsWith('.md')).sort();
+
+  assert.equal(result.removed.length, 2);
+  assert.equal(remaining.length, 2);
 });

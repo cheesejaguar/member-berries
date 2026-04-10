@@ -20,6 +20,7 @@ Current contents:
 - `quickstart.md` — how to use the repo now
 - `how-it-works.md` — the memory model and extension behavior
 - `demo-workflow.md` — a suggested end-to-end demo flow for Pi
+- `releasing.md` — package/release prep and verification guidance
 - `repository-guide.md` — this file
 - `images/` — small visuals used by the README
 
@@ -72,6 +73,8 @@ Current MVP responsibilities:
 - memory bootstrap/status/prime/sync commands
 - manual checkpoint creation
 - lifecycle checkpoints on pre-compact and shutdown
+- checkpoint pruning
+- durable-memory promotion for decisions, gotchas, and commands
 
 ## `tests/`
 

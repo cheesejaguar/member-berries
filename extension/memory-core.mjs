@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { resolve, join, dirname } from 'node:path';
 
 const TEMPLATE_PROJECT = `# Project
@@ -488,6 +488,132 @@ ${notable.length ? notable.map((item) => `- ${item}`).join('\n') : '- none recor
 
   await writeFile(file, content, 'utf8');
   return file;
+}
+
+function appendBlock(text, block) {
+  const trimmed = text.trimEnd();
+  return `${trimmed}\n\n${block.trim()}\n`;
+}
+
+function dedupeCommandSection(sectionBody, command) {
+  if (sectionBody.includes(command)) return { body: sectionBody, added: false };
+  const withoutPlaceholder = sectionBody.replace(/# add verified[^\n]*\n?/g, '');
+  const body = withoutPlaceholder.replace(/```bash\n([\s\S]*?)```/, (_match, inner) => {
+    const existing = inner.trimEnd();
+    const nextInner = existing ? `${existing}\n${command}` : command;
+    return `\`\`\`bash\n${nextInner}\n\`\`\``;
+  });
+  return { body, added: true };
+}
+
+function upsertCommandSection(text, section, command) {
+  const heading = `## ${section}`;
+  const escapedHeading = section.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const sectionRegex = new RegExp(`## ${escapedHeading}\\n([\\s\\S]*?)(?=\\n## |$)`);
+  const match = text.match(sectionRegex);
+
+  if (match) {
+    const original = match[1];
+    const { body, added } = dedupeCommandSection(original, command);
+    return {
+      text: added ? text.replace(sectionRegex, `${heading}\n${body}`) : text,
+      added,
+    };
+  }
+
+  const block = `## ${section}\n\n\`\`\`bash\n${command}\n\`\`\``;
+  return { text: appendBlock(text, block), added: true };
+}
+
+function upsertNotesBullet(text, bullet) {
+  const notesRegex = /## Notes\n([\s\S]*?)$/;
+  if (text.includes(bullet)) return { text, added: false };
+  if (notesRegex.test(text)) {
+    return {
+      text: text.replace(notesRegex, (_match, body) => `## Notes\n${body.trimEnd()}\n- ${bullet}\n`),
+      added: true,
+    };
+  }
+  return { text: appendBlock(text, `## Notes\n- ${bullet}`), added: true };
+}
+
+export async function promoteMemoryEntry(root, kind, payload = {}) {
+  const paths = getMemoryPaths(root);
+
+  if (kind === 'decisions') {
+    const path = paths.decisions;
+    const current = (await readUtf8(path)) || TEMPLATE_DECISIONS;
+    const heading = `${payload.date || new Date().toISOString().slice(0, 10)} — ${payload.title}`;
+    if (current.includes(`## ${heading}`)) return { added: false, path };
+    const block = `## ${heading}\n\n### Status\n${payload.status || 'Accepted'}\n\n### Context\n${payload.context || 'Not recorded.'}\n\n### Decision\n${payload.decision || 'Not recorded.'}\n\n### Why\n${payload.why || 'Not recorded.'}\n\n### Rejected Alternatives\n${(payload.rejectedAlternatives || []).length ? payload.rejectedAlternatives.map((item) => `- ${item}`).join('\n') : '- none recorded'}\n\n### Implications\n${payload.implications || 'Not recorded.'}`;
+    await writeFile(path, appendBlock(current, block), 'utf8');
+    return { added: true, path };
+  }
+
+  if (kind === 'gotchas') {
+    const path = paths.gotchas;
+    const current = (await readUtf8(path)) || TEMPLATE_GOTCHAS;
+    if (current.includes(`### ${payload.title}`)) return { added: false, path };
+    const category = payload.category || 'General';
+    const categoryRegex = new RegExp(`## ${category.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n([\\s\\S]*?)(?=\\n## |$)`);
+    const gotchaBlock = `### ${payload.title}\n- Symptom: ${payload.symptom || 'Not recorded.'}\n- Cause: ${payload.cause || 'Not recorded.'}\n- Fix: ${payload.fix || 'Not recorded.'}\n- Prevention: ${payload.prevention || 'Not recorded.'}\n- Relevant paths/commands: ${(payload.relevant || []).length ? payload.relevant.join(', ') : 'none recorded'}`;
+    const next = categoryRegex.test(current)
+      ? current.replace(categoryRegex, (_match, body) => `## ${category}\n${body.trimEnd()}\n\n${gotchaBlock}\n`)
+      : appendBlock(current, `## ${category}\n\n${gotchaBlock}`);
+    await writeFile(path, next, 'utf8');
+    return { added: true, path };
+  }
+
+  if (kind === 'commands') {
+    const path = paths.commands;
+    let current = (await readUtf8(path)) || TEMPLATE_COMMANDS;
+    const section = payload.section || 'Debug / Inspection';
+    const command = payload.command || '';
+    if (!command) return { added: false, path };
+
+    const sectionResult = upsertCommandSection(current, section, command);
+    current = sectionResult.text;
+
+    let notesAdded = false;
+    if (payload.note) {
+      const notesResult = upsertNotesBullet(current, `\`${command}\` — ${payload.note}`);
+      current = notesResult.text;
+      notesAdded = notesResult.added;
+    }
+
+    await writeFile(path, current, 'utf8');
+    return { added: sectionResult.added || notesAdded, path };
+  }
+
+  throw new Error(`Unsupported promotion kind: ${kind}`);
+}
+
+export async function pruneMemory(root, { keepCheckpoints = 20 } = {}) {
+  const paths = getMemoryPaths(root);
+  const files = await listCheckpointFiles(paths.checkpoints);
+  const seen = new Set();
+  const removed = [];
+  let keptUnique = 0;
+
+  for (const file of files) {
+    const text = (await readUtf8(file)) || '';
+    const normalized = text.replace(/- Time: .*\n/g, '').trim();
+    const isDuplicate = seen.has(normalized);
+
+    if (!isDuplicate && keptUnique < keepCheckpoints) {
+      seen.add(normalized);
+      keptUnique += 1;
+      continue;
+    }
+
+    await unlink(file);
+    removed.push(file);
+  }
+
+  return {
+    removed,
+    keptUnique,
+  };
 }
 
 export function formatSearchResults(results) {

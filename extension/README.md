@@ -10,9 +10,12 @@ This folder now contains a **first-pass MVP** of the Pi extension for `member-be
 - `/memory-search <query>` — search local memory files
 - `/memory-prime [prompt]` — preview the memory block that would be injected
 - `/memory-sync` — create a manual checkpoint and refresh `current.md` timestamp
+- `/memory-prune [keepCount]` — remove duplicate checkpoints and trim old checkpoint history
+- `/memory-promote <decision|gotcha|command> <fields separated by ::>` — promote verified information into durable memory
 
-### Tool
+### Tools
 - `memory_search` — LLM-callable project memory search
+- `memory_promote` — structured durable-memory promotion for verified information
 
 ### Automatic behavior
 - on prompt start, the extension attempts to inject:
@@ -25,10 +28,9 @@ This folder now contains a **first-pass MVP** of the Pi extension for `member-be
 ## What is not implemented yet
 
 - production-grade ranking
-- durable promotion into `decisions.md`, `gotchas.md`, or `commands.md`
-- pruning and dedupe commands
 - rich custom UI or review flows
 - more polished package/install ergonomics beyond the basic Pi manifest
+- more conservative review/approval flows for promotions
 
 ## File layout
 

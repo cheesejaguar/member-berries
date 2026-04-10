@@ -1,10 +1,18 @@
 {
   "name": "member-berries",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.2.0",
+  "private": false,
   "description": "Local-first project memory for Pi: templates, docs, and an extension MVP",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cheesejaguar/member-berries.git"
+  },
+  "homepage": "https://github.com/cheesejaguar/member-berries",
+  "bugs": {
+    "url": "https://github.com/cheesejaguar/member-berries/issues"
+  },
   "keywords": [
     "pi-package",
     "pi",
@@ -13,7 +21,21 @@
     "developer-tools"
   ],
   "scripts": {
-    "test": "node --test tests/memory-core.test.mjs"
+    "test": "node --test tests/memory-core.test.mjs",
+    "pack:check": "npm pack --dry-run"
+  },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "docs",
+    "examples",
+    "extension",
+    "templates",
+    "specs",
+    "tests"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "peerDependencies": {
     "@mariozechner/pi-coding-agent": "*",
