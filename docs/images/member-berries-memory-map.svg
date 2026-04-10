@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" fill="none">
+  <rect width="960" height="560" rx="24" fill="#0B1020"/>
+  <rect x="40" y="40" width="880" height="480" rx="20" fill="#11182E" stroke="#2EE6A6" stroke-opacity="0.35"/>
+  <text x="60" y="88" fill="#EAFBF5" font-size="28" font-family="Arial, Helvetica, sans-serif" font-weight="700">member-berries memory flow</text>
+  <text x="60" y="118" fill="#9EDBC7" font-size="16" font-family="Arial, Helvetica, sans-serif">Local-first project memory for Pi</text>
+
+  <rect x="70" y="160" width="220" height="130" rx="16" fill="#17233F" stroke="#5CE1B9"/>
+  <text x="90" y="195" fill="#EAFBF5" font-size="22" font-family="Arial, Helvetica, sans-serif" font-weight="700">Project files</text>
+  <text x="90" y="225" fill="#BDEDDD" font-size="16" font-family="Arial, Helvetica, sans-serif">.pi/PROJECT.md</text>
+  <text x="90" y="250" fill="#BDEDDD" font-size="16" font-family="Arial, Helvetica, sans-serif">.pi/memory/current.md</text>
+  <text x="90" y="275" fill="#BDEDDD" font-size="16" font-family="Arial, Helvetica, sans-serif">decisions / gotchas / commands</text>
+
+  <rect x="370" y="120" width="220" height="210" rx="16" fill="#182A24" stroke="#39FFB2"/>
+  <text x="390" y="160" fill="#EAFBF5" font-size="22" font-family="Arial, Helvetica, sans-serif" font-weight="700">Pi extension</text>
+  <text x="390" y="195" fill="#BDEDDD" font-size="16" font-family="Arial, Helvetica, sans-serif">contextual injection</text>
+  <text x="390" y="220" fill="#BDEDDD" font-size="16" font-family="Arial, Helvetica, sans-serif">memory_search tool</text>
+  <text x="390" y="245" fill="#BDEDDD" font-size="16" font-family="Arial, Helvetica, sans-serif">bootstrap / status / search</text>
+  <text x="390" y="270" fill="#BDEDDD" font-size="16" font-family="Arial, Helvetica, sans-serif">prime / sync commands</text>
+  <text x="390" y="295" fill="#BDEDDD" font-size="16" font-family="Arial, Helvetica, sans-serif">manual checkpoints</text>
+
+  <rect x="670" y="160" width="220" height="130" rx="16" fill="#231D3E" stroke="#C974FF"/>
+  <text x="690" y="195" fill="#EAFBF5" font-size="22" font-family="Arial, Helvetica, sans-serif" font-weight="700">Pi turn context</text>
+  <text x="690" y="225" fill="#E8D8FF" font-size="16" font-family="Arial, Helvetica, sans-serif">small injected memory block</text>
+  <text x="690" y="250" fill="#E8D8FF" font-size="16" font-family="Arial, Helvetica, sans-serif">plus explicit memory search</text>
+  <text x="690" y="275" fill="#E8D8FF" font-size="16" font-family="Arial, Helvetica, sans-serif">when needed</text>
+
+  <rect x="210" y="380" width="540" height="95" rx="16" fill="#1E2131" stroke="#6F7CFF"/>
+  <text x="235" y="415" fill="#EAFBF5" font-size="20" font-family="Arial, Helvetica, sans-serif" font-weight="700">Operating model</text>
+  <text x="235" y="445" fill="#D7DEFF" font-size="16" font-family="Arial, Helvetica, sans-serif">Store broadly → inject narrowly → checkpoint before loss → keep durable truth separate from transient state</text>
+
+  <path d="M290 225H350" stroke="#5CE1B9" stroke-width="4" stroke-linecap="round"/>
+  <path d="M590 225H650" stroke="#C974FF" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="350" cy="225" r="6" fill="#5CE1B9"/>
+  <circle cx="650" cy="225" r="6" fill="#C974FF"/>
+</svg>
