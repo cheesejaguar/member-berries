@@ -5,13 +5,13 @@
 **Local-first project memory for Pi**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Node tests](https://img.shields.io/badge/tests-node--test-blue.svg)](package.json)
-[![Pi extension](https://img.shields.io/badge/pi-extension%20mvp-8A2BE2.svg)](extension/README.md)
-[![Status](https://img.shields.io/badge/status-v1.0.0-brightgreen.svg)](docs/quickstart.md)
+[![Node tests](https://img.shields.io/badge/tests-10%20passing-blue.svg)](package.json)
+[![Pi package](https://img.shields.io/badge/pi-package-purple.svg)](package.json)
+[![Release](https://img.shields.io/badge/release-v1.0.0-brightgreen.svg)](https://github.com/cheesejaguar/member-berries/releases/tag/v1.0.0)
 
-Small, inspectable, repo-local memory for Pi:
+Human-readable memory for Pi projects:
 
-**project identity + current state + durable decisions + gotchas + commands + checkpoints**
+**project identity · current state · decisions · gotchas · commands · checkpoints**
 
 <img src="docs/images/member-berries-memory-map.svg" alt="member-berries memory flow" width="860" />
 
@@ -19,71 +19,42 @@ Small, inspectable, repo-local memory for Pi:
 
 ---
 
-## What this is
+## Overview
 
-`member-berries` is a practical memory system for Pi that helps a repository keep its:
-- identity
-- active work state
-- durable decisions
-- repeat gotchas
-- trusted commands
-- recent checkpoints
+`member-berries` gives Pi a disciplined, repo-local memory layer.
 
-The goal is not “magic long-term memory.”
+Instead of relying on opaque long-term memory, it keeps important project context in files that live alongside the codebase:
+- what the project is
+- what is happening now
+- why important decisions were made
+- which failures are likely to recur
+- which commands are actually trusted
+- what changed recently
 
-The goal is:
-- **local-first** memory
-- **human-readable** memory
-- **small injected context**
-- **targeted retrieval**
-- **checkpointing before context loss**
+The result is a memory system that is:
+- **local-first**
+- **inspectable**
+- **editable by humans**
+- **small enough to stay useful**
 
-## Current status
+## Why it exists
 
-This repository is now in a usable **v1.0.0 foundation release** state.
+Most agent memory approaches fail in one of two ways:
 
-What exists today:
-- a full design spec
-- onboarding docs
-- reusable template files
-- a concrete sample project
-- a tested memory helper core
-- a first-pass Pi extension MVP
+1. **No memory** — every session starts cold.
+2. **Too much memory** — the model gets flooded with stale or low-value context.
 
-What works now:
-- bootstrap a `.pi/` memory structure
-- inspect memory status
-- search local memory
-- preview injected memory
-- create manual checkpoints
-- prune duplicate/old checkpoints
-- promote verified memory through a guided interactive flow
-- use `memory_search` and `memory_promote` tools
-- inject a compact memory block at prompt start
-- write lifecycle checkpoints on pre-compact and shutdown
-
-What is **not** fully mature yet:
-- advanced approval/review flows around durable promotions
-- richer pruning beyond checkpoint cleanup
-- more polished extension UI
-- broader real-world eval coverage across many repositories
-
-## Why this exists
-
-Most agent memory systems fail in one of two ways:
-
-1. **No memory** — every session starts from scratch.
-2. **Too much memory** — giant opaque context dumps flood the model.
-
-`member-berries` tries to keep the middle:
+`member-berries` takes a middle path:
 - store broadly
 - inject narrowly
 - retrieve on demand
-- keep durable truth separate from transient state
+- checkpoint before context loss
+- separate durable truth from transient work state
 
-## Memory model
+## What you get in v1.0.0
 
-Each project gets a local `.pi/` memory layout like this:
+### Memory model
+Each project gets a local `.pi/` memory layout:
 
 ```text
 .pi/
@@ -104,102 +75,69 @@ Each file has one job:
 - `commands.md` — trusted repo operations
 - `checkpoints/` — short time-indexed work snapshots
 
-## Start here
+### Pi extension
+The package includes a Pi extension with:
+- contextual prompt-start memory injection
+- lifecycle checkpoints on pre-compact and shutdown
+- local memory search
+- guided durable-memory promotion
+- checkpoint pruning / duplicate cleanup
 
-- [Quick start](docs/quickstart.md)
-- [How it works](docs/how-it-works.md)
-- [Demo workflow](docs/demo-workflow.md)
-- [Releasing](docs/releasing.md)
-- [Repository guide](docs/repository-guide.md)
-- [Canonical design spec](specs/2026-04-10-pi-project-memory-design.md)
-- [Sample project](examples/sample-project/README.md)
-- [Extension details](extension/README.md)
+### Commands
+- `/memory-bootstrap`
+- `/memory-status`
+- `/memory-search <query>`
+- `/memory-prime [prompt]`
+- `/memory-sync`
+- `/memory-prune [keepCount]`
+- `/memory-promote`
 
-## Quick start
+### Tools
+- `memory_search`
+- `memory_promote`
 
-### Manual-only workflow
+### Supporting material
+- reusable templates
+- onboarding docs
+- sample project
+- tested helper core
 
-If you just want the memory model today:
-1. copy the files from `templates/` into a repo-local `.pi/` directory
-2. fill in `PROJECT.md` and `memory/current.md`
-3. use the example project as your style guide
+## Install
 
-### Extension MVP workflow
-
-If you want the MVP extension path:
-1. install the package in Pi
-2. bootstrap `.pi/` memory
-3. use the commands:
-   - `/memory-bootstrap`
-   - `/memory-status`
-   - `/memory-search <query>`
-   - `/memory-prime [prompt]`
-   - `/memory-sync`
-
-Example local install:
+### Install from local path
 
 ```bash
 pi install /Users/aaron/Documents/member-berries
 ```
 
-Example GitHub install:
+### Install from GitHub
 
 ```bash
 pi install git:github.com/cheesejaguar/member-berries
 ```
 
-## What to copy into a real project today
+## Quick start
 
-These files are the easiest starting point:
-- `templates/PROJECT.md`
-- `templates/current.md`
-- `templates/decisions.md`
-- `templates/gotchas.md`
-- `templates/commands.md`
-- `templates/checkpoint.md`
-
-Suggested destination:
+1. Install the package.
+2. Open Pi inside a project.
+3. Run:
 
 ```text
-your-project/
-  .pi/
-    PROJECT.md
-    memory/
-      current.md
-      decisions.md
-      gotchas.md
-      commands.md
-      checkpoints/
+/memory-bootstrap
 ```
 
-## Example repository shape
+4. Fill in:
+- `.pi/PROJECT.md`
+- `.pi/memory/current.md`
 
-```text
-member-berries/
-  docs/
-    images/
-    quickstart.md
-    how-it-works.md
-    repository-guide.md
-  examples/
-    sample-project/
-      .pi/
-        PROJECT.md
-        memory/
-          current.md
-          decisions.md
-          gotchas.md
-          commands.md
-          checkpoints/
-  extension/
-    index.ts
-    memory-core.mjs
-    README.md
-  specs/
-  templates/
-  tests/
-  package.json
-```
+5. Use the memory commands as needed:
+- `/memory-status`
+- `/memory-search <query>`
+- `/memory-prime [prompt]`
+- `/memory-sync`
+- `/memory-promote`
+
+For a fuller walkthrough, see [docs/quickstart.md](docs/quickstart.md).
 
 ## Example workflow
 
@@ -207,59 +145,72 @@ A practical daily loop looks like this:
 
 1. keep `.pi/PROJECT.md` accurate
 2. keep `.pi/memory/current.md` current
-3. record only important durable decisions
+3. record only real, future-relevant decisions
 4. add gotchas only when they are costly or likely to recur
-5. add a checkpoint before stopping or switching context
-6. let memory search pull deeper context only when needed
+5. checkpoint before stopping or switching context
+6. use memory search when deeper context is needed
 
-## Demo / GIF workflow
+## Demo
 
-If you want to show the tool in a short demo, use this sequence:
+See:
+- [docs/demo-workflow.md](docs/demo-workflow.md)
+- [examples/sample-project/README.md](examples/sample-project/README.md)
 
-1. install the package with `pi install /Users/aaron/Documents/member-berries`
-2. open Pi in a test repo
-3. run `/memory-bootstrap`
-4. show the generated `.pi/` files
-5. run `/memory-status`
-6. run `/memory-search flaky search`
-7. run `/memory-sync`
-8. ask a normal repo question and show the injected-memory behavior
+The sample project shows a realistic `.pi/` memory setup and the intended writing style for each file.
 
-A longer written version lives in [docs/demo-workflow.md](docs/demo-workflow.md).
+## How it works
+
+On each prompt, the extension tries to give Pi the smallest useful amount of memory:
+- always-on project identity from `PROJECT.md`
+- always-on live state from `current.md`
+- selectively retrieved snippets from decisions, gotchas, commands, and checkpoints
+
+This keeps context small while still making past reasoning and operational knowledge available.
+
+For the full model, see [docs/how-it-works.md](docs/how-it-works.md).
 
 ## Safety and privacy
 
-This project is designed to be **local-first**.
+`member-berries` is designed to be **local-first**.
 
-Current repo guarantees:
+Current guarantees:
 - no cloud memory service
-- no vector DB dependency in the MVP
-- no hidden background sync
-- human-readable memory files
+- no hidden sync
+- no vector database dependency
+- human-readable repo-local files
 
-Before commits, the repo should be checked for:
-- tokens
-- API keys
-- `.env` files
-- machine-local artifacts
+Durable memory writes are intended to be conservative:
+- decisions should be explicit
+- gotchas should be proven and likely to recur
+- commands should be verified
 
 ## Repository structure
 
-- `docs/` — onboarding and conceptual documentation
-- `examples/` — realistic reference setup
-- `extension/` — Pi extension MVP and tested helper core
-- `specs/` — design and implementation plans
-- `templates/` — reusable `.pi/` memory templates
-- `tests/` — Node tests for pure memory helpers
+```text
+member-berries/
+  docs/        # onboarding and conceptual docs
+  examples/    # realistic sample project
+  extension/   # Pi extension and helper core
+  specs/       # design and implementation plans
+  templates/   # reusable .pi memory templates
+  tests/       # helper tests
+```
 
-## Roadmap
+## Documentation
 
-Near-term priorities:
-1. expand pruning beyond checkpoint cleanup
-2. add stronger approval/review flows around durable promotions
-3. polish extension UX and package ergonomics
-4. add broader eval coverage across many repositories
-5. grow this into a more complete Pi package
+- [Quick start](docs/quickstart.md)
+- [How it works](docs/how-it-works.md)
+- [Demo workflow](docs/demo-workflow.md)
+- [Releasing](docs/releasing.md)
+- [Repository guide](docs/repository-guide.md)
+- [Extension details](extension/README.md)
+- [Design spec](specs/2026-04-10-pi-project-memory-design.md)
+
+## Release status
+
+This is the **v1.0.0** release of the project.
+
+That means it is intended to be usable, installable, and understandable today — while still leaving room for future improvements in ranking, pruning, approval flows, and broader eval coverage.
 
 ## License
 
