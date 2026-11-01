@@ -19,9 +19,11 @@ test('parseSections extracts markdown sections with headings', () => {
   const text = `# Decisions\n\n## 2026-04-10 — Search indexing\n\n### Status\nAccepted\n\n### Why\nQueue retries were flaky.\n`;
   const sections = parseSections(text);
 
-  assert.ok(sections.length >= 2);
+  assert.equal(sections.length, 3);
   assert.equal(sections[0].heading, '2026-04-10 — Search indexing');
+  assert.equal(sections[0].body, '');
   assert.equal(sections[1].heading, '2026-04-10 — Search indexing / Status');
+  assert.equal(sections[1].body, 'Accepted');
   assert.equal(sections[2].heading, '2026-04-10 — Search indexing / Why');
   assert.match(sections[2].body, /Queue retries/);
 });
@@ -38,6 +40,16 @@ test('bootstrapMemoryProject creates the local .pi memory structure', async () =
 
   const currentContents = await readFile(result.paths.current, 'utf8');
   assert.match(currentContents, /# Current State/);
+
+  assert.match(await readFile(result.paths.decisions, 'utf8'), /^# Decisions/);
+  assert.match(await readFile(result.paths.gotchas, 'utf8'), /^# Gotchas/);
+  assert.match(await readFile(result.paths.commands, 'utf8'), /^# Commands/);
+  assert.deepEqual(await readdir(result.paths.checkpoints), []);
+
+  await writeFile(result.paths.current, '# Current State\n\ncustom\n', 'utf8');
+  const again = await bootstrapMemoryProject(root);
+  assert.equal(again.created, false);
+  assert.equal(await readFile(result.paths.current, 'utf8'), '# Current State\n\ncustom\n');
 });
 
 test('searchMemory ranks matching decision content above unrelated content', async () => {
@@ -128,7 +140,8 @@ test('refreshCurrentTimestamp rewrites the Last Updated field', async () => {
   await refreshCurrentTimestamp(root, '2026-04-10T08:30:00Z');
   const currentText = await readFile(currentPath, 'utf8');
 
-  assert.match(currentText, /## Last Updated\n2026-04-10T08:30:00Z/);
+  assert.match(currentText, /## Last Updated\n2026-04-10T08:30:00Z\n/);
+  assert.doesNotMatch(currentText, /YYYY-MM-DDTHH:MM:SSZ/);
 });
 
 test('promoteMemoryEntry appends a decision and skips duplicate headings', async () => {
@@ -157,7 +170,10 @@ test('promoteMemoryEntry appends a decision and skips duplicate headings', async
   const text = await readFile(join(root, '.pi', 'memory', 'decisions.md'), 'utf8');
   assert.equal(first.added, true);
   assert.equal(second.added, false);
-  assert.match(text, /Use worker retry metrics/);
+  assert.equal(text.split('## 2026-04-10 — Use worker retry metrics').length - 1, 1);
+  assert.match(text, /### Decision\nTrack retry counts explicitly in worker logs\./);
+  assert.match(text, /### Rejected Alternatives\n- Infer retries from generic job failures/);
+  assert.doesNotMatch(text, /Duplicate attempt/);
 });
 
 test('promoteMemoryEntry adds a command to the requested command section', async () => {
@@ -172,23 +188,50 @@ test('promoteMemoryEntry adds a command to the requested command section', async
 
   const text = await readFile(join(root, '.pi', 'memory', 'commands.md'), 'utf8');
   assert.equal(result.added, true);
-  assert.match(text, /pnpm test -- search-index/);
-  assert.match(text, /Run this when changing indexing behavior/);
+  assert.match(text, /## Test\n```bash\npnpm test -- search-index\n```/);
+  assert.doesNotMatch(text, /# add verified test commands here/);
+  assert.match(text, /## Notes\n[\s\S]*- `pnpm test -- search-index` — Run this when changing indexing behavior\.\n$/);
+
+  const repeat = await promoteMemoryEntry(root, 'commands', {
+    section: 'Test',
+    command: 'pnpm test -- search-index',
+    note: 'Run this when changing indexing behavior.',
+  });
+  assert.equal(repeat.added, false);
+  assert.equal(await readFile(join(root, '.pi', 'memory', 'commands.md'), 'utf8'), text);
 });
 
-test('pruneMemory removes duplicate checkpoint files and trims old history', async () => {
+test('pruneMemory removes duplicate checkpoint files', async () => {
   const root = await mkdtemp(join(tmpdir(), 'member-berries-'));
   await bootstrapMemoryProject(root);
 
   const checkpointsDir = join(root, '.pi', 'memory', 'checkpoints');
-  await writeFile(join(checkpointsDir, '2026-04-10T00-00-00Z.md'), '# Checkpoint\n\nrepeat\n', 'utf8');
-  await writeFile(join(checkpointsDir, '2026-04-10T00-01-00Z.md'), '# Checkpoint\n\nrepeat\n', 'utf8');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-00-00Z.md'), '# Checkpoint\n\n- Time: 2026-04-10T00:00:00Z\nrepeat\n', 'utf8');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-01-00Z.md'), '# Checkpoint\n\n- Time: 2026-04-10T00:01:00Z\nrepeat\n', 'utf8');
   await writeFile(join(checkpointsDir, '2026-04-10T00-02-00Z.md'), '# Checkpoint\n\nunique 1\n', 'utf8');
-  await writeFile(join(checkpointsDir, '2026-04-10T00-03-00Z.md'), '# Checkpoint\n\nunique 2\n', 'utf8');
+
+  const result = await pruneMemory(root, { keepCheckpoints: 10 });
+  const remaining = (await readdir(checkpointsDir)).filter((name) => name.endsWith('.md')).sort();
+
+  // Newest copy of a duplicate is kept; only differing Time lines are ignored.
+  assert.deepEqual(result.removed, [join(checkpointsDir, '2026-04-10T00-00-00Z.md')]);
+  assert.equal(result.keptUnique, 2);
+  assert.deepEqual(remaining, ['2026-04-10T00-01-00Z.md', '2026-04-10T00-02-00Z.md']);
+});
+
+test('pruneMemory trims old history beyond keepCheckpoints, keeping the newest', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'member-berries-'));
+  await bootstrapMemoryProject(root);
+
+  const checkpointsDir = join(root, '.pi', 'memory', 'checkpoints');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-00-00Z.md'), '# Checkpoint\n\nunique 0\n', 'utf8');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-01-00Z.md'), '# Checkpoint\n\nunique 1\n', 'utf8');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-02-00Z.md'), '# Checkpoint\n\nunique 2\n', 'utf8');
+  await writeFile(join(checkpointsDir, '2026-04-10T00-03-00Z.md'), '# Checkpoint\n\nunique 3\n', 'utf8');
 
   const result = await pruneMemory(root, { keepCheckpoints: 2 });
   const remaining = (await readdir(checkpointsDir)).filter((name) => name.endsWith('.md')).sort();
 
   assert.equal(result.removed.length, 2);
-  assert.equal(remaining.length, 2);
+  assert.deepEqual(remaining, ['2026-04-10T00-02-00Z.md', '2026-04-10T00-03-00Z.md']);
 });
